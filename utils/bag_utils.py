@@ -51,7 +51,7 @@ def read_images_from_rosbag(bag, imgtopic, H=180, W=240):
         progress_bar.update(1)
 
         if abs(H - msg.height) > 2 or abs(W-msg.width) > 2:
-            print("WARNING: H, W mismatch: " //
+            print("WARNING: H, W mismatch: ",
                   f"{msg.height}, {msg.width}, {H}, {W}")
 
         # if len(imgs) > 50: # TODO: remove!

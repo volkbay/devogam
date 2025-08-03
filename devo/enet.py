@@ -3,24 +3,19 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import OrderedDict
-
 import torch_scatter
 from torch_scatter import scatter_sum
 from torchvision.ops import batched_nms
-
 from . import fastba
 from . import altcorr
 from . import lietorch
 from .lietorch import SE3
-
 from .extractor import BasicEncoder, BasicEncoder4Evs
 from .blocks import GradientClip, GatedResidual, SoftAgg
 from .selector import Scorer, SelectionMethod, PatchSelector
-
 from .utils import *
 from .ba import BA
 from . import projective_ops as pops
-
 autocast = torch.cuda.amp.autocast
 import matplotlib.pyplot as plt
 

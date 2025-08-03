@@ -131,6 +131,7 @@ dependencies:
   - werkzeug=2.1.2=pyhd8ed1ab_1
   - wheel=0.37.1=pyhd3eb1b0_0
   - xz=5.2.5=h7f8727e_1
+  - yacs
   - yarl=1.7.2=py310h5764c6d_2
   - zipp=3.8.0=pyhd8ed1ab_0
   - zlib=1.2.12=h7f8727e_2
@@ -149,7 +150,7 @@ dependencies:
     - hdf5plugin==4.4.0
     - lz4==4.0.1
     - natsort==8.1.0
-    - numba
+    - numba==0.55
     - opencv-python==4.6.0.66
     - pandas==1.4.3
     - pygments==2.12.0

@@ -86,7 +86,7 @@ def process_seq_hku(indirs, side="left", DELTA_MS=None):
                                if im.endswith(".png")]
             undist_no = bag.get_message_count(topics[imgtopic_idx])
             if undist_no == len(img_list_undist):
-                print("\n\nWARNING **** Images already undistorted." //
+                print("\n\nWARNING **** Images already undistorted.",
                       f" Skipping {indir} ***** \n\n")
                 assert os.path.isfile(
                     os.path.join(indir, f"rectify_map_{side}.h5"))
@@ -190,7 +190,7 @@ def process_seq_hku(indirs, side="left", DELTA_MS=None):
                     )[0]
 
             if len(evs_idx) == 0:
-                print(f"no events in range {ts_us*1e-3}" /
+                print(f"no events in range {ts_us*1e-3}",
                       f" - {tss_imgs_us[ts_idx+1]*1e-3} milisecs")
                 continue
             evs_batch = np.array(evs[evs_idx, :]).copy()

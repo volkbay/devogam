@@ -6,7 +6,6 @@ from . import fastba
 from . import altcorr
 from . import lietorch
 from .lietorch import SE3
-
 # from .net import VONet # TODO add net.py
 from .enet import eVONet
 from .utils import *
