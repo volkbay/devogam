@@ -108,7 +108,11 @@ class DEVO:
             self.network = VONet(patch_selector=self.cfg.PATCH_SELECTOR) if not self.evs else \
                 eVONet(dim_inet=self.dim_inet, dim_fnet=self.dim_fnet, dim=self.dim, patch_selector=self.cfg.PATCH_SELECTOR)
             if 'model_state_dict' in checkpoint:
-                self.network.load_state_dict(checkpoint['model_state_dict'])
+                # NOTE: Uncomment for time surface (temp solution).
+                # checkpoint['model_state_dict']['patchify.fnet.conv1.weight'] = checkpoint['model_state_dict']['patchify.fnet.conv1.weight'][:, 0:1, :, :]
+                # checkpoint['model_state_dict']['patchify.inet.conv1.weight'] = checkpoint['model_state_dict']['patchify.inet.conv1.weight'][:, 0:1, :, :]
+                # checkpoint['model_state_dict']['patchify.scorer.scorer.0.weight'] = checkpoint['model_state_dict']['patchify.scorer.scorer.0.weight'][:, 0:1, :, :]
+                self.network.load_state_dict(checkpoint['model_state_dict'], strict=False)
             else:
                 # legacy
                 from collections import OrderedDict

@@ -15,7 +15,7 @@ import torch.nn.functional as F
 
 import torchvision
 
-from utils.event_utils import EventSlicer, to_voxel_grid, RemoveHotPixelsVoxel
+from utils.event_utils import EventSlicer, to_voxel_grid, to_time_surface, RemoveHotPixelsVoxel
 from utils.viz_utils import visualize_voxel, visualize_N_voxels, render
 from utils.transform_utils import transform_rescale
 
@@ -53,7 +53,9 @@ def read_batch_as_voxel(evs_slicer, t0_us, t1_us, rectify_map, trafos, Horig, Wo
         return None
 
     rect = rectify_map[ev_batch["y"], ev_batch["x"]]
+    # NOTE: alternate between voxel or time surface (temp solution).
     voxel = to_voxel_grid(rect[..., 0], rect[..., 1], ev_batch["t"], ev_batch["p"], H=Horig, W=Worig, nb_of_time_bins=Nbins)
+    # voxel = to_time_surface(rect[..., 0], rect[..., 1], ev_batch["t"], ev_batch["p"], H=Horig, W=Worig, separate_polarity=False)
 
     if trafos is not None:
         for t in trafos:

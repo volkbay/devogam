@@ -125,6 +125,7 @@ class PatchSelector():
             scores_grid = self._grid(avg_scores) # (b,n,h2,w2,GRID*GRID)
             _, _, h2, w2, _ = scores_grid.shape
             scores_t = scores_grid.view(b*n,h2*w2,(self.GRID**2)).transpose(-2,-1).contiguous().view(b*n*(self.GRID**2),h2*w2) # (b,n,h2*w2,GRID*GRID) -> (b,n,GRID*GRID,h2*w2) -> (b*n*GRID*GRID,h2*w2)
+            scores_t = torch.nan_to_num(scores_t, nan=0.0, posinf=0.0, neginf=0.0)
             scores_t += 1e-7 # to fulfill non-zero sum
             idx = torch.multinomial(scores_t, patches_per_image//(self.GRID**2)) # (b*n*GRID*GRID,patches_per_image/(GRID*GRID))
             idx = idx.view(b*n,self.GRID**2,-1).transpose(-2,-1) # -> (b*n,patches_per_image/(GRID*GRID),GRID*GRID)
@@ -137,6 +138,7 @@ class PatchSelector():
         idx_gather = idx[...,None].repeat(1,1,self.KERNEL_SIZE*self.KERNEL_SIZE) # -> (b*n,patches_per_image,KERNEL_SIZE*KERNEL_SIZE)
         avg_windows = F.unfold(scores.view(b*n,1,h,w), kernel_size=self.KERNEL_SIZE, stride=self.KERNEL_SIZE, padding=1).transpose(-2,-1) # -> (b*n,#windows,1*KERNEL_SIZE*KERNEL_SIZE)
         avg_windows_multi = torch.gather(avg_windows, -2, idx_gather) # (b*n,patches_per_image,KERNEL_SIZE*KERNEL_SIZE)
+        avg_windows_multi = torch.nan_to_num(avg_windows_multi, nan=0.0, posinf=0.0, neginf=0.0)
         avg_windows_multi += 1e-7 # to fulfill non-zero sum
         idx_offset = torch.multinomial(avg_windows_multi.flatten(0,1), 1).view(b*n,patches_per_image) # (b*n*patches_per_image,1) -> (b*n,patches_per_image)
         x_offset = (idx_offset % self.KERNEL_SIZE) # (b*n,patches_per_image)

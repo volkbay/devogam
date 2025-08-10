@@ -174,7 +174,30 @@ class EventSlicer:
         if time_ms >= self.ms_to_idx.size:
             return None
         return self.ms_to_idx[time_ms]
-    
+
+
+def to_time_surface(xs, ys, ts, ps, H=480, W=640, separate_polarity=True):
+    """
+    Returns a time surface representation from events.
+    If separate_polarity is True, returns (2, H, W), else (1, H, W).
+    Discards events with out-of-bounds coordinates.
+    """
+    # Filter out-of-bounds events
+    valid = (xs >= 0) & (xs < W) & (ys >= 0) & (ys < H)
+    xs = xs[valid].astype(np.int0)
+    ys = ys[valid].astype(np.int0)
+    ts = ts[valid]
+    ps = ps[valid]
+
+    if separate_polarity:
+        surface = torch.zeros((2, H, W), dtype=torch.float32)
+        for pol in [0, 1]:
+            mask = (ps == pol)
+            surface[pol, ys[mask], xs[mask]] = torch.from_numpy(ts[mask]) if not torch.is_tensor(ts) else ts[mask]
+    else:
+        surface = torch.zeros((1, H, W), dtype=torch.float32)
+        surface[0, ys, xs] = torch.from_numpy(ts.astype(np.float32)) if not torch.is_tensor(ts) else ts
+    return surface
 
 
 def to_voxel_grid(xs, ys, ts, ps, H=480, W=640, nb_of_time_bins=5, remapping_maps=None):

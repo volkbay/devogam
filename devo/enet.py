@@ -101,8 +101,9 @@ class Patchifier(nn.Module):
         self.dim_inet = dim_inet # dim of context extractor and hidden state (update operator)
         self.dim_fnet = dim_fnet # dim of matching extractor
         self.patch_selector = patch_selector.lower()
-        self.fnet = BasicEncoder4Evs(output_dim=self.dim_fnet, dim=dim, norm_fn='instance') # matching-feature extractor
-        self.inet = BasicEncoder4Evs(output_dim=self.dim_inet, dim=dim, norm_fn='none') # context-feature extractor
+        # NOTE bins=1 for time surface.
+        self.fnet = BasicEncoder4Evs(output_dim=self.dim_fnet, bins=5, dim=dim, norm_fn='instance') # matching-feature extractor
+        self.inet = BasicEncoder4Evs(output_dim=self.dim_inet, bins=5, dim=dim, norm_fn='none') # context-feature extractor
         if self.patch_selector == SelectionMethod.SCORER:
             self.scorer = Scorer(5)
 
