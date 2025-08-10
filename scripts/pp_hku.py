@@ -11,11 +11,89 @@ from utils.bag_utils import (read_evs_from_rosbag, read_H_W_from_bag,
                              read_images_from_rosbag, read_poses_from_rosbag,
                              read_t0us_evs_from_rosbag,
                              read_tss_us_from_rosbag)
-from utils.event_utils import write_evs_arr_to_h5
-from utils.load_utils import compute_rmap_vector
-from utils.viz_utils import render
+# from utils.event_utils import write_evs_arr_to_h5
+# from utils.load_utils import compute_rmap_vector
+# from utils.viz_utils import render
 
 H, W = 260, 346
+
+
+def render(x: np.ndarray, y: np.ndarray, pol: np.ndarray, H: int, W: int) -> np.ndarray:
+    assert x.size == y.size == pol.size
+    assert H > 0
+    assert W > 0
+    img = np.full((H,W,3), fill_value=255,dtype='uint8')
+    mask = np.zeros((H,W),dtype='int32')
+    pol = pol.astype('int')
+    pol[pol==0]=-1
+    mask1 = (x>=0)&(y>=0)&(W>x)&(H>y)
+    mask[y[mask1].astype(np.int32), x[mask1].astype(np.int32)] = pol[mask1]
+    img[mask==0]=[255,255,255]
+    img[mask==-1]=[255,0,0]
+    img[mask==1]=[0,0,255] 
+    return img
+
+
+def compute_rmap_vector(Kevsdist, dist_coeffs_evs, scenedir, side, H=480, W=640):
+    K_new_evs, roi = cv2.getOptimalNewCameraMatrix(Kevsdist, dist_coeffs_evs, (W, H), alpha=0, newImgSize=(W, H))
+    
+    coords = np.stack(np.meshgrid(np.arange(W), np.arange(H))).reshape((2, -1)).astype("float32")
+    term_criteria = (cv2.TERM_CRITERIA_MAX_ITER | cv2.TERM_CRITERIA_EPS, 100, 0.001)
+    points = cv2.undistortPointsIter(coords, Kevsdist, dist_coeffs_evs, np.eye(3), K_new_evs, criteria=term_criteria)
+    rectify_map = points.reshape((H, W, 2))
+
+    # # 4) Create rectify map for events
+    h5outfile = os.path.join(scenedir, f"rectify_map_{side}.h5")
+    ef_out = h5py.File(h5outfile, 'w')
+    ef_out.clear()
+    ef_out.create_dataset('rectify_map', shape=(H, W, 2), dtype="<f4")
+    ef_out["rectify_map"][:] = rectify_map
+    ef_out.close()
+
+    return rectify_map, K_new_evs
+
+
+def compute_ms_to_idx(tss_ns, ms_start=0):
+    """
+    evs_ns: (N, 4)
+    idx_start: Integer
+    ms_start: Integer
+    """
+
+    ms_to_ns = 1000000
+    # tss_sorted, _ = torch.sort(tss_ns) 
+    # assert torch.abs(tss_sorted != tss_ns).sum() < 500
+
+    ms_end = int(math.floor(tss_ns.max()) / ms_to_ns)
+    assert ms_end >= ms_start
+    ms_window = np.arange(ms_start, ms_end + 1, 1).astype(np.uint64)
+    ms_to_idx = np.searchsorted(tss_ns, ms_window * ms_to_ns, side="left", sorter=np.argsort(tss_ns))
+    
+    assert np.all(np.asarray([(tss_ns[ms_to_idx[ms]] >= ms*ms_to_ns) for ms in ms_window]))
+    assert np.all(np.asarray([(tss_ns[ms_to_idx[ms]-1] < ms*ms_to_ns) for ms in ms_window if ms_to_idx[ms] >= 1]))
+    
+    return ms_to_idx
+
+
+def write_evs_arr_to_h5(evs, h5outfile, xidx=0, yidx=1, tssidx=2, polidx=3):
+    ef_out = h5py.File(h5outfile, 'w')
+    ef_out.clear()
+    num_events = evs.shape[0]
+    event_grp = ef_out.create_group('/events')
+    event_grp.create_dataset('p', shape=(num_events,), dtype='|u1')
+    event_grp.create_dataset('t', shape=(num_events,), dtype='<u4')
+    event_grp.create_dataset('x', shape=(num_events,), dtype='<u2')
+    event_grp.create_dataset('y', shape=(num_events,), dtype='<u2')
+    event_grp["x"][:] = evs[:, xidx]
+    event_grp["y"][:] = evs[:, yidx]
+    event_grp["t"][:] = evs[:, tssidx]
+    event_grp["p"][:] = evs[:, polidx]
+
+    ms_to_idx = compute_ms_to_idx(evs[:, tssidx]*1e3)
+    ef_out.create_dataset('ms_to_idx', shape=len(ms_to_idx), dtype="<u8")
+    ef_out["ms_to_idx"][:] = ms_to_idx
+
+    ef_out.close()
 
 
 def write_gt_stamped(poses, tss_us_gt, outfile):
