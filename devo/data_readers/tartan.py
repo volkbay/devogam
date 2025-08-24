@@ -49,7 +49,6 @@ class TartanAir(RGBDDataset):
             # graph of co-visible frames based on flow
             graph = self.build_frame_graph(poses, depths, intrinsics) # graph is dict of {frameIdx: (co-visible frames, distance)}
 
-            scene = '/'.join(scene.split('/'))
             scene_info[scene] = {'images': images, 'depths': depths, 
                 'poses': poses, 'intrinsics': intrinsics, 'graph': graph}
 
@@ -112,7 +111,6 @@ class TartanAirE2VID(RGBDDataset):
             # graph of co-visible frames based on flow
             graph = self.build_frame_graph(poses, depths, intrinsics) # graph is dict of {frameIdx: (co-visible frames, distance)}
 
-            scene = '/'.join(scene.split('/'))
             scene_info[scene] = {'images': images, 'depths': depths,
                 'poses': poses, 'intrinsics': intrinsics, 'graph': graph}
 
@@ -152,9 +150,7 @@ class TartanAirEVS(EVSDDataset):
         print("Building TartanAir EVSD dataset")
 
         scene_info = {}
-        scenes = glob.glob(osp.join(self.root, '*/*/evs_left'))
-        scenes = [glob.glob(osp.join(s, '*/*/*/*')) for s in scenes]
-        scenes = functools.reduce(operator.concat, scenes)
+        scenes = glob.glob(osp.join(self.root, '*/*/*/evs_left'))
         for scene in tqdm(sorted(scenes)):
             if not is_converted(scene):
                 print(f"Skipping {scene}. Not fully converted")
@@ -165,11 +161,11 @@ class TartanAirEVS(EVSDDataset):
 
             voxels = sorted(glob.glob(osp.join(scene, 'h5/*.h5')))
             assert len(voxels) > 0
-            depths = sorted(glob.glob(osp.join(scene.replace("evs_left", "depth_left"), 'depth_left/*.npy')))[1:] # No event voxel at first timestamp t=0
+            depths = sorted(glob.glob(osp.join(scene.replace("evs_left", "depth_left"), '*.npy')))[1:] # No event voxel at first timestamp t=0
             assert len(voxels) == len(depths)
 
             # [simon] poses are c2w, did thorough viz and data_type.md]
-            poses = np.loadtxt(osp.join(scene.replace('evs_left', 'image_left'), 'pose_left.txt'), delimiter=' ')[1:] # No event voxel at first timestamp t=0
+            poses = np.loadtxt(osp.join(scene.replace('evs_left', ''), 'pose_left.txt'), delimiter=' ')[1:] # No event voxel at first timestamp t=0
             poses = poses[:, [1, 2, 0, 4, 5, 3, 6]] # NED (z,x,y) to (x,y,z) camera frame
             poses[:,:3] /= TartanAirEVS.DEPTH_SCALE
             intrinsics = [TartanAirEVS.calib_read()] * len(voxels)
@@ -178,7 +174,6 @@ class TartanAirEVS(EVSDDataset):
             # graph of co-visible frames based on flow
             graph = self.build_frame_graph(poses, depths, intrinsics) # graph is dict of {frameIdx: (co-visible frames, distance)}
 
-            scene = '/'.join(scene.split('/'))
             scene_info[scene] = {'voxels': voxels, 'depths': depths,
                 'poses': poses, 'intrinsics': intrinsics, 'graph': graph}
             

@@ -23,23 +23,16 @@ RUN wget --quiet \
     $CONDA_DIR/bin/conda tos accept --override-channels \
     --channel https://repo.anaconda.com/pkgs/r && \
     $CONDA_DIR/bin/conda update -q conda
-
-# Install mamba
-RUN conda install mamba -n base -c conda-forge
+RUN conda init --all
 
 # Copy environment file
 COPY environment.yml /tmp/environment.yml
 
 # Create environment
-RUN mamba env create -f /tmp/environment.yml && conda clean -afy
+RUN conda env create -f /tmp/environment.yml && conda clean -afy
 ENV PATH=$CONDA_DIR/envs/devo/bin:$PATH
+RUN echo 'Conda environment setup complete.'
 
-WORKDIR /devogam
-RUN conda init fish
-RUN conda activate devo && \
-    pip install .
-
-# Default command shell
 RUN echo "export QT_X11_NO_MITSHM=1" >> /root/.bashrc
 RUN echo "export NVIDIA_VISIBLE_DEVICES=all" >> /root/.bashrc
 RUN echo "export NVIDIA_DRIVER_CAPABILITIES=all" \
@@ -48,6 +41,8 @@ RUN echo 'set -x QT_X11_NO_MITSHM 1' >> /root/.config/fish/config.fish
 RUN echo 'set -x NVIDIA_VISIBLE_DEVICES all' >> /root/.config/fish/config.fish
 RUN echo 'set -x NVIDIA_DRIVER_CAPABILITIES all' \
     >> /root/.config/fish/config.fish
+
+# Default command shell
 CMD ["/bin/fish"]
 
 # Running Container:

@@ -1,16 +1,17 @@
-import os
 import math
-import numpy as np
+import os
 import os.path as osp
 
+import numpy as np
 import torch
-from devo.config import cfg
 
-from utils.eval_utils import run_voxel, assert_eval_config
-from utils.load_utils import voxel_iterator_parallel, voxel_iterator
-from utils.eval_utils import log_results, log_results_loss, write_raw_results, compute_results, compute_median_results
+from devo.config import cfg
+from utils.eval_utils import (assert_eval_config, compute_median_results,
+                              log_results, run_voxel, write_raw_results)
+from utils.load_utils import voxel_iterator
 from utils.transform_utils import transform_rescale_poses
 from utils.viz_utils import viz_flow_inference
+
 
 @torch.no_grad()
 def evaluate(config, args, net, train_step=None, datapath="", split_file=None,
@@ -36,9 +37,9 @@ def evaluate(config, args, net, train_step=None, datapath="", split_file=None,
         for trial in range(trials):
 
             # estimated trajectory
-            datapath_val = os.path.join(datapath, scene.split("/")[0], scene.split("/")[2])
-            scene_path = os.path.join(datapath_val, "evs_left", scene, "h5")
-            traj_ref = osp.join(datapath_val, "image_left", scene, "pose_left.txt")
+            datapath_val = os.path.join(datapath, scene)
+            scene_path = os.path.join(datapath_val, "evs_left", "h5")
+            traj_ref = osp.join(datapath_val, "pose_left.txt")
 
             # run the slam system
             if scale != 1.0:

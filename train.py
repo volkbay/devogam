@@ -1,30 +1,29 @@
-import cv2
-import os
-import numpy as np
-from collections import OrderedDict
 import contextlib
+import os
+from collections import OrderedDict
 
+import cv2
 import matplotlib.pyplot as plt
-plt.switch_backend('Agg')
+import numpy as np
 import torch
-import torch.optim as optim
-from torch.utils.data import DataLoader
-from devo.data_readers.factory import dataset_factory
-
-from devo.lietorch import SE3
-from devo.logger import Logger
-import torch.nn.functional as F
-
-# from devo.net import VONet # TODO add net.py
-from devo.enet import eVONet
-from devo.selector import SelectionMethod
-
+import torch.distributed as dist
 # DDP training
 import torch.multiprocessing as mp
-import torch.distributed as dist
+import torch.nn.functional as F
+import torch.optim as optim
 from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.utils.data import DataLoader
 
-from utils.viz_utils import plot_patch_following_all, plot_patch_following, plot_patch_depths_all
+from devo.data_readers.factory import dataset_factory
+# from devo.net import VONet # TODO add net.py
+from devo.enet import eVONet
+from devo.lietorch import SE3
+from devo.logger import Logger
+from devo.selector import SelectionMethod
+from evals.eval_evs.eval_tartan_evs import evaluate as eval_tartan_evs
+from evals.eval_rgb.eval_tartan import evaluate as eval_tartan
+from utils.viz_utils import (plot_patch_depths_all, plot_patch_following,
+                             plot_patch_following_all)
 
 DEBUG_PLOT_PATCHES = False
 
@@ -272,7 +271,7 @@ def train(rank, args):
                     torch.cuda.empty_cache()
 
                     if rank == 0:
-                        PATH = '../checkpoints/%s/%06d.pth' % (args.name, args.gpu_num * total_steps)
+                        PATH = './checkpoints/%s/%06d.pth' % (args.name, args.gpu_num * total_steps)
                         torch.save({
                             'steps': total_steps,
                             'model_state_dict': net.module.state_dict() if args.ddp else net.state_dict(),
@@ -281,12 +280,10 @@ def train(rank, args):
                         
                         if args.eval:
                             if args.evs:
-                                from evals.eval_evs.eval_tartan_evs import evaluate as eval_tartan_evs
                                 val_results, val_figures = eval_tartan_evs(None, None, net.module if args.ddp else net, total_steps,
                                                                         args.datapath, args.val_split, return_figure=True, plot=True, rpg_eval=False,
                                                                         scale=args.scale, expname=args.name, **kwargs_net)
                             else:
-                                from evals.eval_rgb.eval_tartan import evaluate as eval_tartan
                                 val_results, val_figures = eval_tartan(None, None, net.module if args.ddp else net, total_steps,
                                                                    args.datapath, args.val_split, return_figure=True, plot=True, rpg_eval=False,
                                                                    scale=args.scale, expname=args.name)
@@ -304,7 +301,7 @@ def train(rank, args):
                 continue
             break
     
-    if rank == 0:
+    if rank == 0 and (logger.writer is not None):
         logger.close()
     if args.ddp:
         dist.destroy_process_group()
@@ -400,8 +397,8 @@ if __name__ == '__main__':
     cmd = "ulimit -n 2000000"
     os.system(cmd)
 
-    if not os.path.isdir(f'../checkpoints/{args.name}'):
-        os.makedirs(f'../checkpoints/{args.name}')
+    if not os.path.isdir(f'./checkpoints/{args.name}'):
+        os.makedirs(f'./checkpoints/{args.name}')
     
     if args.ddp:
         mp.spawn(train, nprocs=args.gpu_num, args=(args,))
